@@ -35,6 +35,14 @@ pipeline {
                 '''
             }
         }
+
+        stage('Security') {
+            steps {
+                echo 'Running security audit on dependencies...'
+                sh 'npm audit --json > audit-report.json || true'
+                sh 'npm audit || true'
+            }
+        }
     }
 
     post {

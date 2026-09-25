@@ -46,8 +46,8 @@
   <div class="panel">
     <h2>Add an Author</h2>
     <form id="authorForm">
-      <input type="text" id="authorName" placeholder="Author name" required>
-      <input type="text" id="authorBio" placeholder="Short bio (optional)">
+      <input type="text" id="authorName" placeholder="Author name" aria-label="Author name" required>
+      <input type="text" id="authorBio" placeholder="Short bio (optional)" aria-label="Author short bio">
       <button type="submit">Add Author</button>
     </form>
     <div class="status" id="authorStatus"></div>
@@ -56,11 +56,11 @@
   <div class="panel">
     <h2>Add a Book</h2>
     <form id="bookForm">
-      <input type="text" id="bookTitle" placeholder="Title" required>
-      <input type="text" id="bookGenre" placeholder="Genre">
-      <input type="number" id="bookYear" placeholder="Year">
-      <select id="bookAuthor" required></select>
-      <input type="text" id="bookDesc" placeholder="Description" style="flex-basis: 100%;">
+      <input type="text" id="bookTitle" placeholder="Title" aria-label="Book title" required>
+      <input type="text" id="bookGenre" placeholder="Genre" aria-label="Book genre">
+      <input type="number" id="bookYear" placeholder="Year" aria-label="Published year">
+      <select id="bookAuthor" aria-label="Select author" required></select>
+      <input type="text" id="bookDesc" placeholder="Description" aria-label="Book description" style="flex-basis: 100%;">
       <button type="submit">Add Book</button>
     </form>
     <div class="status" id="bookStatus"></div>
@@ -110,7 +110,7 @@ async function loadBooks() {
       <div class="meta">${b.genre || 'Unknown genre'} · ${b.publishedYear || 'n/a'} · by ${b.author?.name || 'Unknown author'}</div>
       <p>${b.description || ''}</p>
       <div class="book-actions">
-        <button class="btn-edit" onclick="editBook('${b.bookId}', '${(b.description || '').replace(/'/g, "\\'")}')">Edit</button>
+        <button class="btn-edit" onclick="editBook('${b.bookId}', '${(b.description || '').replaceAll(/'/g, String.raw`\'`)}')">Edit</button>
         <button class="btn-delete" onclick="deleteBook('${b.bookId}')">Delete</button>
       </div>
     </div>
@@ -143,7 +143,7 @@ document.getElementById('bookForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('bookTitle').value;
   const genre = document.getElementById('bookGenre').value;
-  const publishedYear = parseInt(document.getElementById('bookYear').value) || undefined;
+  const publishedYear = Number.parseInt(document.getElementById('bookYear').value, 10) || undefined;
   const author = document.getElementById('bookAuthor').value;
   const description = document.getElementById('bookDesc').value;
   const status = document.getElementById('bookStatus');

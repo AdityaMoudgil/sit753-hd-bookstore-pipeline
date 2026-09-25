@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const path = require('node:path');
 const errorMiddleware = require('./middlewares/error.middleware');
 const loggerMiddleware = require('./middlewares/logger.middleware');
 const router = require('./routes');
@@ -23,7 +24,6 @@ app.use(cors());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const path = require('path');
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(loggerMiddleware)
 

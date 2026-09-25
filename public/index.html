@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Corner Bookstore</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, sans-serif; background: #f6f3ee; margin: 0; padding: 0; color: #2b2b2b; }
+  header { background: #2c3e2d; color: #fff; padding: 24px 40px; }
+  header h1 { margin: 0; font-size: 28px; }
+  header p { margin: 4px 0 0; opacity: 0.8; font-size: 14px; }
+  main { max-width: 960px; margin: 30px auto; padding: 0 20px; }
+  .panel { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .panel h2 { margin-top: 0; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+  form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  input, select, textarea { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+  input[type=text], input[type=number] { flex: 1; min-width: 140px; }
+  button { background: #2c3e2d; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:hover { background: #3f5940; }
+  .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .book-card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative; }
+  .book-card h3 { margin: 0 0 4px; font-size: 16px; }
+  .book-card .meta { font-size: 13px; color: #777; margin-bottom: 8px; }
+  .book-card p { font-size: 14px; color: #444; margin: 0 0 12px; }
+  .book-actions { display: flex; gap: 8px; }
+  .book-actions button { flex: 1; font-size: 13px; padding: 6px 10px; }
+  .btn-delete { background: #a3392f; }
+  .btn-delete:hover { background: #c2453a; }
+  .btn-edit { background: #4a6b8a; }
+  .btn-edit:hover { background: #5c81a3; }
+  .empty { color: #888; font-style: italic; }
+  .status { font-size: 13px; margin-top: 8px; min-height: 16px; }
+  .status.ok { color: #2c6b2f; }
+  .status.err { color: #a3392f; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 The Corner Bookstore</h1>
+  <p>A small demo bookstore, backed by a live Node.js / MongoDB API</p>
+</header>
+
+<main>
+
+  <div class="panel">
+    <h2>Add an Author</h2>
+    <form id="authorForm">
+      <input type="text" id="authorName" placeholder="Author name" required>
+      <input type="text" id="authorBio" placeholder="Short bio (optional)">
+      <button type="submit">Add Author</button>
+    </form>
+    <div class="status" id="authorStatus"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Add a Book</h2>
+    <form id="bookForm">
+      <input type="text" id="bookTitle" placeholder="Title" required>
+      <input type="text" id="bookGenre" placeholder="Genre">
+      <input type="number" id="bookYear" placeholder="Year">
+      <select id="bookAuthor" required></select>
+      <input type="text" id="bookDesc" placeholder="Description" style="flex-basis: 100%;">
+      <button type="submit">Add Book</button>
+    </form>
+    <div class="status" id="bookStatus"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Catalogue</h2>
+    <div class="book-grid" id="bookGrid">
+      <p class="empty">Loading books...</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+async function loadAuthors() {
+  const res = await fetch('/api/authors');
+  let authors = [];
+  if (res.status !== 204) {
+    authors = await res.json();
+  }
+  const select = document.getElementById('bookAuthor');
+  select.innerHTML = '<option value="">Select author...</option>';
+  (Array.isArray(authors) ? authors : []).forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a._id;
+    opt.textContent = a.name;
+    select.appendChild(opt);
+  });
+}
+
+async function loadBooks() {
+  const grid = document.getElementById('bookGrid');
+  const res = await fetch('/api/books');
+  let books = [];
+  if (res.status !== 204) {
+    const json = await res.json();
+    books = json.data || [];
+  }
+  if (books.length === 0) {
+    grid.innerHTML = '<p class="empty">No books yet — add one above.</p>';
+    return;
+  }
+  grid.innerHTML = books.map(b => `
+    <div class="book-card">
+      <h3>${b.title}</h3>
+      <div class="meta">${b.genre || 'Unknown genre'} · ${b.publishedYear || 'n/a'} · by ${b.author?.name || 'Unknown author'}</div>
+      <p>${b.description || ''}</p>
+      <div class="book-actions">
+        <button class="btn-edit" onclick="editBook('${b.bookId}', '${(b.description || '').replace(/'/g, "\\'")}')">Edit</button>
+        <button class="btn-delete" onclick="deleteBook('${b.bookId}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('authorForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('authorName').value;
+  const bio = document.getElementById('authorBio').value;
+  const status = document.getElementById('authorStatus');
+  try {
+    const res = await fetch('/api/authors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, bio })
+    });
+    if (!res.ok) throw new Error('Failed to add author');
+    status.textContent = 'Author added.';
+    status.className = 'status ok';
+    e.target.reset();
+    loadAuthors();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.className = 'status err';
+  }
+});
+
+document.getElementById('bookForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = document.getElementById('bookTitle').value;
+  const genre = document.getElementById('bookGenre').value;
+  const publishedYear = parseInt(document.getElementById('bookYear').value) || undefined;
+  const author = document.getElementById('bookAuthor').value;
+  const description = document.getElementById('bookDesc').value;
+  const status = document.getElementById('bookStatus');
+  try {
+    const res = await fetch('/api/books/addBook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, genre, publishedYear, author, description })
+    });
+    if (!res.ok) throw new Error('Failed to add book');
+    status.textContent = 'Book added.';
+    status.className = 'status ok';
+    e.target.reset();
+    loadBooks();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.className = 'status err';
+  }
+});
+
+async function deleteBook(bookId) {
+  if (!confirm('Delete this book?')) return;
+  await fetch(`/api/books/delete/${bookId}`, { method: 'DELETE' });
+  loadBooks();
+}
+
+async function editBook(bookId, currentDesc) {
+  const newDesc = prompt('New description:', currentDesc);
+  if (newDesc === null) return;
+  await fetch(`/api/books/update/${bookId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description: newDesc })
+  });
+  loadBooks();
+}
+
+loadAuthors();
+loadBooks();
+</script>
+
+</body>
+</html>

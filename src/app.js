@@ -10,11 +10,21 @@ const router = require('./routes');
 const app = express();
 
 // Global middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
 app.use(cors());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../public')));
 app.use(loggerMiddleware)
 
 // Mount routes

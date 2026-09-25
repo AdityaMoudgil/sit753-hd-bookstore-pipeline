@@ -79,6 +79,25 @@ pipeline {
                 sh 'docker exec bookstore-production wget -q -O- http://localhost:3000/ || (echo "Release health check failed" && exit 1)'
             }
         }
+
+        stage('Monitoring') {
+            steps {
+                echo 'Checking production health and monitoring status...'
+                script {
+                    def healthStatus = sh(
+                        script: 'docker exec bookstore-production wget -q -O- http://localhost:3000/ || echo "DOWN"',
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (healthStatus.contains("DOWN")) {
+                        echo "ALERT: Production health check failed!"
+                        error("Monitoring detected production is unhealthy")
+                    } else {
+                        echo "Monitoring check passed: Production is healthy (response: ${healthStatus})"
+                    }
+                }
+            }
+        }
     }
 
     post {
@@ -86,10 +105,15 @@ pipeline {
             echo 'Pipeline finished.'
         }
         success {
-            echo 'Build, tests, and code quality checks passed successfully.'
+            echo 'Build, tests, quality, security, deploy, release, and monitoring all passed successfully.'
         }
         failure {
             echo 'Pipeline failed — check the stage logs above.'
+            emailext (
+                subject: "Pipeline Alert: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER} FAILED",
+                body: "The pipeline failed at some stage. Check console output: ${env.BUILD_URL}",
+                to: 's225787273@deakin.edu.au'
+            )
         }
     }
 }

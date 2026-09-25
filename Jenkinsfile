@@ -6,7 +6,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token')
     }
 
-        stages {
+    stages {
         stage('Build') {
             steps {
                 echo 'Building Docker image...'
@@ -31,7 +31,8 @@ pipeline {
                   -Dsonar.sources=. \
                   -Dsonar.host.url=http://sonarqube:9000 \
                   -Dsonar.token=${SONAR_TOKEN} \
-                  -Dsonar.exclusions=node_modules/**,docs/**
+                  -Dsonar.exclusions=node_modules/**,docs/** \
+                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
                 '''
             }
         }
@@ -88,7 +89,7 @@ pipeline {
                         script: 'docker exec bookstore-production wget -q -O- http://localhost:3000/ || echo "DOWN"',
                         returnStdout: true
                     ).trim()
-                    
+
                     if (healthStatus.contains("DOWN")) {
                         echo "ALERT: Production health check failed!"
                         error("Monitoring detected production is unhealthy")

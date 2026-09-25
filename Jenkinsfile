@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        ATLAS_URI = 'mongodb://bookstore-mongo:27017/bookstore_ci'
+        MONGO_TEST_URI = 'mongodb://bookstore-mongo:27017/bookstore_test'
     }
 
     stages {
@@ -15,15 +15,22 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'Running test suite inside a Node container...'
-                sh '''
-                docker run --rm \
-                  --network bookstore-net \
-                  -e ATLAS_URI=mongodb://bookstore-mongo:27017/bookstore_ci \
-                  -v $(pwd):/app -w /app \
-                  node:20-alpine sh -c "npm install && npm test"
-                '''
+                echo 'Installing dependencies and running test suite...'
+                sh 'npm install'
+                sh 'npm test'
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished.'
+        }
+        success {
+            echo 'Build and tests passed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed — check the stage logs above.'
         }
     }
 }

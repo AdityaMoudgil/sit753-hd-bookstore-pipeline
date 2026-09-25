@@ -3,8 +3,7 @@ const mongoose = require("mongoose");
 const app = require("../app");
 
 beforeAll(async () => {
-  await mongoose.connect("mongodb://localhost:27017/bookstore_test");
-});
+    await mongoose.connect(process.env.MONGO_TEST_URI || "mongodb://localhost:27017/bookstore_test");});
 
 afterAll(async () => {
   await mongoose.connection.close();

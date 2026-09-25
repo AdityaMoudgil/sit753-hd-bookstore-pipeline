@@ -6,7 +6,7 @@ let authorId;
 let createdBookId;
 
 beforeAll(async () => {
-  await mongoose.connect("mongodb://localhost:27017/bookstore_test");
+  await mongoose.connect(process.env.MONGO_TEST_URI || "mongodb://localhost:27017/bookstore_test");
 
   // Create an author first, since books require a valid author ObjectId
   const authorRes = await request(app)

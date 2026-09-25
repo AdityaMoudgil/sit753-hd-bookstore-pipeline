@@ -110,7 +110,7 @@ async function loadBooks() {
       <div class="meta">${b.genre || 'Unknown genre'} · ${b.publishedYear || 'n/a'} · by ${b.author?.name || 'Unknown author'}</div>
       <p>${b.description || ''}</p>
       <div class="book-actions">
-        <button class="btn-edit" onclick="editBook('${b.bookId}', '${(b.description || '').replaceAll(/'/g, String.raw`\'`)}')">Edit</button>
+        <button class="btn-edit" onclick="editBook('${b.bookId}', '${(b.description || '').replaceAll("'", "\\'")}')">Edit</button>
         <button class="btn-delete" onclick="deleteBook('${b.bookId}')">Delete</button>
       </div>
     </div>

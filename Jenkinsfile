@@ -60,6 +60,25 @@ pipeline {
                 sh 'docker exec bookstore-staging wget -q -O- http://localhost:3000/ || (echo "Deployment health check failed" && exit 1)'
             }
         }
+
+        stage('Release') {
+            steps {
+                echo 'Releasing to production environment...'
+                sh 'docker tag bookstore-app:${BUILD_NUMBER} bookstore-app:release-${BUILD_NUMBER}'
+                sh 'docker rm -f bookstore-production || true'
+                sh '''
+                docker run -d \
+                  --name bookstore-production \
+                  --network bookstore-net \
+                  -p 3003:3000 \
+                  -e ATLAS_URI=mongodb://bookstore-mongo:27017/bookstore_production \
+                  -e NODE_ENV=production \
+                  bookstore-app:release-${BUILD_NUMBER}
+                '''
+                sh 'sleep 5'
+                sh 'docker exec bookstore-production wget -q -O- http://localhost:3000/ || (echo "Release health check failed" && exit 1)'
+            }
+        }
     }
 
     post {

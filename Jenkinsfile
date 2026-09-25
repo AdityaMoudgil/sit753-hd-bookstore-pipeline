@@ -57,7 +57,7 @@ pipeline {
                   bookstore-app:${BUILD_NUMBER}
                 '''
                 sh 'sleep 5'
-                sh 'curl -f http://localhost:3002/ || (echo "Deployment health check failed" && exit 1)'
+                sh 'docker exec bookstore-staging wget -q -O- http://localhost:3000/ || (echo "Deployment health check failed" && exit 1)'
             }
         }
     }

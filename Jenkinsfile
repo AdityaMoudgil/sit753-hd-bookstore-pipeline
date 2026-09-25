@@ -6,7 +6,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token')
     }
 
-    stages {
+        stages {
         stage('Build') {
             steps {
                 echo 'Building Docker image...'
@@ -41,6 +41,23 @@ pipeline {
                 echo 'Running security audit on dependencies...'
                 sh 'npm audit --json > audit-report.json || true'
                 sh 'npm audit || true'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying to test environment...'
+                sh 'docker rm -f bookstore-staging || true'
+                sh '''
+                docker run -d \
+                  --name bookstore-staging \
+                  --network bookstore-net \
+                  -p 3002:3000 \
+                  -e ATLAS_URI=mongodb://bookstore-mongo:27017/bookstore_staging \
+                  bookstore-app:${BUILD_NUMBER}
+                '''
+                sh 'sleep 5'
+                sh 'curl -f http://localhost:3002/ || (echo "Deployment health check failed" && exit 1)'
             }
         }
     }
